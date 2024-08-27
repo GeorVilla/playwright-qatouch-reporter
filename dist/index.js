@@ -1,17 +1,18 @@
-const QATouch  = require('./qatouch.js');
+const QATouch = require('./qatouch.js');
 require('dotenv').config()
 
-const options= {
-    'domain' : process.env.QATOUCH_DOMAIN,
+const options = {
+    'domain': process.env.QATOUCH_DOMAIN,
     'apiToken': process.env.QATOUCH_API_TOKEN,
     'projectKey': process.env.QATOUCH_PROJECT_KEY,
     'testRunId': process.env.QATOUCH_TESTRUN_ID
 };
+
 class QATouchReporter {
     qaTouch = new QATouch(options);
     results = [];
 
-   onBegin(config, suite) {
+    onBegin(config, suite) {
         console.log(`Starting the run with ${suite.allTests().length} tests`);
     }
 
@@ -20,8 +21,17 @@ class QATouchReporter {
     }
 
     onTestEnd(test, result) {
-        if (result.status === 'passed') {
-            const status_id = this.qaTouch.statusConfig('Passed');
+
+        if (result.status === 'passed' || result.status === 'failed' || result.status === 'timedOut') {
+            let status_id;
+            if (result.status === 'passed') {
+                status_id = this.qaTouch.statusConfig('Passed');
+            } else if (result.status === 'failed') {
+                status_id = this.qaTouch.statusConfig('Failed');
+            } else if (result.status === 'timedOut') {
+                status_id = this.qaTouch.statusConfig('Failed');
+            }
+
             const caseIds = this.qaTouch.TitleToCaseIds(test.title);
 
             if (caseIds.length > 0) {
@@ -31,9 +41,9 @@ class QATouchReporter {
                 }));
                 this.results.push(...results);
             }
+            console.log(`Finished test ${test.title}: ${result.status}`);
         }
-       console.log(`Finished test ${test.title}: ${result.status}`);
-    }
+    } 
 
     onEnd(result) {
         console.log(`Finished the run: ${result.status}`);
